@@ -1,0 +1,3 @@
+node_modules/
+*.log
+# dist/ is committed so raw.githubusercontent.com can load the built plugin (run `npm run build` before push).

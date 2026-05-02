@@ -1,0 +1,15 @@
+{
+  "name": "Local Message (preview)",
+  "description": "Inject messages only on your client (local). For UI/embed testing. Not sent to Discord servers.",
+  "version": "2.0.0-kettu-typescript",
+  "authors": [
+    {
+      "name": "shufflekillsdream_sodfsdf"
+    }
+  ],
+  "main": "src/index.tsx",
+  "vendetta": {
+    "icon": "PencilIcon"
+  },
+  "hash": ""
+}
