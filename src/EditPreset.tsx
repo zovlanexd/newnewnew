@@ -24,10 +24,16 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
   if (!initial) return null;
 
   const [local, setLocal] = React.useState<Preset>({ ...initial });
+  const [sendVariantIdx, setSendVariantIdx] = React.useState(0);
   const ruleRef = React.useRef(local);
   React.useEffect(() => {
     ruleRef.current = local;
   }, [local]);
+
+  React.useEffect(() => {
+    const max = Math.max(0, local.messages.length - 1);
+    setSendVariantIdx((i) => Math.min(Math.max(0, i), max));
+  }, [local.messages.length]);
 
   const navigation = NavigationNative.useNavigation();
   const isDeletingRef = React.useRef(false);
@@ -50,11 +56,12 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
 
   const sendNow = (): void => {
     try {
-      const payload = buildPayload(ruleRef.current);
+      const payload = buildPayload(ruleRef.current, sendVariantIdx);
       const msg = payload.message as Record<string, unknown>;
-      dispatchLocalMessageCreate(msg);
       const stored = cloneForStorage(msg);
       if (stored) st.cached.push(stored);
+      dispatchLocalMessageCreate(msg);
+      queueMicrotask(() => dispatchLocalMessageCreate(msg));
       showToast("Local message injected (saved to local cache).", getAssetIDByName("Check"));
     } catch (e) {
       showToast(String((e as Error)?.message || e), getAssetIDByName("Small"));
@@ -104,12 +111,49 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
           onChange={(v: string) => updateField("userId", v)}
           placeholder="Author user snowflake"
         />
-        <FormInput
-          title="Message"
-          value={local.message}
-          onChange={(v: string) => updateField("message", v)}
-          placeholder="Text or embed body"
+      </FormSection>
+
+      <FormSection title="Messages">
+        <FormRow
+          label={`Send uses variant ${sendVariantIdx + 1} / ${local.messages.length}`}
+          subLabel="Tap to cycle which body Send now uses"
+          trailing={FormRow.Arrow}
+          onPress={() =>
+            setSendVariantIdx((i) => (i + 1) % Math.max(local.messages.length, 1))
+          }
         />
+        {local.messages.map((text, i) => (
+          <FormInput
+            key={i}
+            title={`Variant ${i + 1}`}
+            value={text}
+            onChange={(v: string) => {
+              const next = [...local.messages];
+              next[i] = v;
+              updateField("messages", next);
+            }}
+            placeholder="Text or embed body"
+          />
+        ))}
+        <FormRow
+          label="Add message variant"
+          trailing={FormRow.Arrow}
+          onPress={() => updateField("messages", [...local.messages, ""])}
+        />
+        {local.messages.length > 1 ? (
+          <FormRow
+            label="Remove last variant"
+            trailing={FormRow.Arrow}
+            variant="danger"
+            onPress={() => {
+              const next = local.messages.slice(0, -1);
+              updateField("messages", next.length ? next : [""]);
+            }}
+          />
+        ) : null}
+      </FormSection>
+
+      <FormSection title="Embed">
         <FormSwitchRow
           label="Embed preview"
           subLabel="Show message as a rich embed"

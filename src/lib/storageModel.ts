@@ -5,7 +5,7 @@ export function defaultPreset(name: string): Preset {
     name: name || "New preset",
     channelId: "",
     userId: "",
-    message: "",
+    messages: [""],
     showEmbedPreview: false,
     embedImageUrl: "",
   };
@@ -15,9 +15,18 @@ export function ensureRule(r: Preset): void {
   if (typeof r.name !== "string") r.name = "Preset";
   if (typeof r.channelId !== "string") r.channelId = "";
   if (typeof r.userId !== "string") r.userId = "";
-  if (typeof r.message !== "string") r.message = "";
   if (typeof r.showEmbedPreview !== "boolean") r.showEmbedPreview = false;
   if (typeof r.embedImageUrl !== "string") r.embedImageUrl = "";
+
+  const legacy = r as Preset & { message?: string };
+  if (!Array.isArray(r.messages)) {
+    const old = typeof legacy.message === "string" ? legacy.message : "";
+    r.messages = old.length ? [old] : [""];
+  }
+  delete legacy.message;
+
+  r.messages = r.messages.map((line) => (typeof line === "string" ? line : ""));
+  if (r.messages.length === 0) r.messages = [""];
 }
 
 export function ensureRoot(st: RootStorage): void {
@@ -42,7 +51,8 @@ export function ensureRoot(st: RootStorage): void {
     const r = st.rules[0];
     r.channelId = typeof st.channelId === "string" ? st.channelId : "";
     r.userId = typeof st.userId === "string" ? st.userId : "";
-    r.message = typeof st.message === "string" ? st.message : "";
+    r.messages =
+      typeof st.message === "string" && st.message.length ? [st.message] : [""];
     r.showEmbedPreview = !!st.showEmbedPreview;
     r.embedImageUrl = typeof st.embedImageUrl === "string" ? st.embedImageUrl : "";
     delete st.channelId;

@@ -2,7 +2,8 @@ export type Preset = {
   name: string;
   channelId: string;
   userId: string;
-  message: string;
+  /** Multiple bodies for this channel/user; pick which to send in the editor */
+  messages: string[];
   showEmbedPreview: boolean;
   embedImageUrl: string;
 };

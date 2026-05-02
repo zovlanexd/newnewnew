@@ -51,7 +51,7 @@ export default function Settings(): React.ReactElement {
               label={rule.name || "Unnamed"}
               subLabel={
                 rule.channelId && rule.userId
-                  ? `${rule.channelId.slice(0, 8)}… · ${rule.userId.slice(0, 8)}…`
+                  ? `${rule.messages?.length ?? 1} msg variant(s) · ${rule.channelId.slice(0, 8)}…`
                   : "Set channel & user IDs"
               }
               trailing={FormRow.Arrow}

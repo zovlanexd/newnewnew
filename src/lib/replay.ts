@@ -51,12 +51,14 @@ export function scheduleAutoReplay(st: RootStorage): void {
     } catch (_) {}
   };
 
-  fallbackTimer = setTimeout(run, 6000);
+  // Plugins usually load after CONNECTION_OPEN already fired — replay ASAP instead of waiting seconds.
+  queueMicrotask(run);
+  fallbackTimer = setTimeout(run, 1600);
 
   try {
     if (typeof FluxDispatcher.subscribe === "function") {
       const handler = (): void => {
-        setTimeout(run, 2000);
+        queueMicrotask(run);
       };
       FluxDispatcher.subscribe("CONNECTION_OPEN", handler);
       connUnsub = (): void => {
@@ -69,6 +71,7 @@ export function scheduleAutoReplay(st: RootStorage): void {
 }
 
 export function disposeReplay(): void {
+  autoReplayedThisSession = false;
   if (fallbackTimer) {
     clearTimeout(fallbackTimer);
     fallbackTimer = null;

@@ -16,11 +16,14 @@ export function genSnowflake(): string {
   return String((ts << 22n) + rand);
 }
 
-export function buildPayload(rule: Preset): Record<string, unknown> {
+export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unknown> {
   ensureRule(rule);
   const channelId = rule.channelId.trim();
   const userId = rule.userId.trim();
   if (!channelId || !userId) throw new Error("Set both channel ID and user ID.");
+
+  const count = rule.messages.length;
+  const idx = Math.max(0, Math.min(Math.floor(variantIndex), count - 1));
 
   const ChannelStore = findByStoreName("ChannelStore") as {
     getChannel?: (id: string) => { guild_id?: string | null } | undefined;
@@ -48,7 +51,7 @@ export function buildPayload(rule: Preset): Record<string, unknown> {
 
   const messageId = genSnowflake();
   const now = new Date().toISOString();
-  const text = rule.message ?? "";
+  const text = rule.messages[idx] ?? "";
 
   const embeds =
     rule.showEmbedPreview && text.trim().length > 0

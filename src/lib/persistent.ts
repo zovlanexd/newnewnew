@@ -46,6 +46,7 @@ export function installPersistentLocalMessages(st: RootStorage): () => void {
   const scheduleReplayChannel = (channelId: string): void => {
     const cid = String(channelId);
     if (!cid) return;
+    queueMicrotask(() => replayChannelMessages(cid));
     const prev = channelReplayTimers.get(cid);
     if (prev) clearTimeout(prev);
     channelReplayTimers.set(
@@ -53,7 +54,7 @@ export function installPersistentLocalMessages(st: RootStorage): () => void {
       setTimeout(() => {
         channelReplayTimers.delete(cid);
         replayChannelMessages(cid);
-      }, 120),
+      }, 280),
     );
   };
 
@@ -64,6 +65,17 @@ export function installPersistentLocalMessages(st: RootStorage): () => void {
       messages?: Array<{ channel_id?: string }>;
     };
     return String(p.channelId ?? p.channel?.id ?? p.messages?.[0]?.channel_id ?? "");
+  };
+
+  /** CHANNEL_SELECT and similar often only expose id-style fields */
+  const channelIdFromRoutePayload = (payload: Record<string, unknown>): string => {
+    const p = payload as {
+      channelId?: string;
+      selectedChannelId?: string;
+      channel?: { id?: string };
+      id?: string;
+    };
+    return String(p.channelId ?? p.selectedChannelId ?? p.channel?.id ?? p.id ?? "");
   };
 
   const deletedIdsFromPayload = (payload: Record<string, unknown>): string[] => {
@@ -96,6 +108,7 @@ export function installPersistentLocalMessages(st: RootStorage): () => void {
 
   const historyEvents = [
     "LOAD_MESSAGES_SUCCESS",
+    "LOAD_MESSAGES_SUCCESS_CACHED",
     "LOAD_MESSAGES_AROUND_SUCCESS",
     "LOAD_MESSAGES_QUERY_SUCCESS",
   ];
@@ -105,6 +118,13 @@ export function installPersistentLocalMessages(st: RootStorage): () => void {
       if (cid) scheduleReplayChannel(cid);
     });
   }
+
+  subscribe("CHANNEL_SELECT", (payload) => {
+    const cid =
+      channelIdFromHistoryPayload(payload as Record<string, unknown>) ||
+      channelIdFromRoutePayload(payload as Record<string, unknown>);
+    if (cid) scheduleReplayChannel(cid);
+  });
 
   return (): void => {
     for (const t of channelReplayTimers.values()) clearTimeout(t);
