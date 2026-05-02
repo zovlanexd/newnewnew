@@ -23,10 +23,25 @@ export function ensureRule(r: Preset): void {
     const old = typeof legacy.message === "string" ? legacy.message : "";
     r.messages = old.length ? [old] : [""];
   }
-  delete legacy.message;
+  if ("message" in legacy) {
+    Reflect.deleteProperty(legacy, "message");
+  }
 
-  r.messages = r.messages.map((line) => (typeof line === "string" ? line : ""));
-  if (r.messages.length === 0) r.messages = [""];
+  // Never replace messages with a new array unless values actually change — useProxy(storage)
+  // re-renders on mutation; unconditional .map() caused an infinite render loop ("Retry render").
+  let needsCoerce = false;
+  for (const line of r.messages) {
+    if (typeof line !== "string") {
+      needsCoerce = true;
+      break;
+    }
+  }
+  if (needsCoerce) {
+    r.messages = r.messages.map((line) => (typeof line === "string" ? line : ""));
+  }
+  if (r.messages.length === 0) {
+    r.messages = [""];
+  }
 }
 
 export function ensureRoot(st: RootStorage): void {
