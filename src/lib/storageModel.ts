@@ -6,6 +6,8 @@ export function defaultPreset(name: string): Preset {
     channelId: "",
     userId: "",
     messages: [""],
+    customSentAtEnabled: false,
+    sentAtIso: "",
     showEmbedPreview: false,
     embedImageUrl: "",
   };
@@ -15,6 +17,8 @@ export function ensureRule(r: Preset): void {
   if (typeof r.name !== "string") r.name = "Preset";
   if (typeof r.channelId !== "string") r.channelId = "";
   if (typeof r.userId !== "string") r.userId = "";
+  if (typeof r.customSentAtEnabled !== "boolean") r.customSentAtEnabled = false;
+  if (typeof r.sentAtIso !== "string") r.sentAtIso = "";
   if (typeof r.showEmbedPreview !== "boolean") r.showEmbedPreview = false;
   if (typeof r.embedImageUrl !== "string") r.embedImageUrl = "";
 

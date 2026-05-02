@@ -10,10 +10,31 @@ export function cloneForStorage(message: Record<string, unknown>): Record<string
   }
 }
 
-export function genSnowflake(): string {
-  const ts = BigInt(Date.now());
-  const rand = BigInt(Math.floor(Math.random() * 0xfffff));
-  return String((ts << 22n) + rand);
+const DISCORD_EPOCH_MS = 1420070400000;
+
+/** Discord-style snowflake from UTC millis (defaults to now). */
+export function genSnowflake(atMs?: number): string {
+  const ms =
+    typeof atMs === "number" && Number.isFinite(atMs) ? Math.floor(atMs) : Date.now();
+  const ts = BigInt(ms - DISCORD_EPOCH_MS);
+  if (ts < 0n) {
+    const fallback = BigInt(Date.now() - DISCORD_EPOCH_MS);
+    const rand = BigInt(Math.floor(Math.random() * 0xfff));
+    return String((fallback << 22n) | rand);
+  }
+  const rand = BigInt(Math.floor(Math.random() * 0xfff));
+  return String((ts << 22n) | rand);
+}
+
+export function resolveSentTimestampMs(rule: Preset): number {
+  if (!rule.customSentAtEnabled) return Date.now();
+  const raw = rule.sentAtIso?.trim() ?? "";
+  if (!raw.length) return Date.now();
+  const parsed = Date.parse(raw);
+  if (Number.isNaN(parsed)) {
+    throw new Error('Invalid sent time — use ISO 8601 (e.g. 2026-05-02T18:30:00.000Z).');
+  }
+  return parsed;
 }
 
 export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unknown> {
@@ -49,8 +70,9 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
         global_name: "Unknown user",
       };
 
-  const messageId = genSnowflake();
-  const now = new Date().toISOString();
+  const sentMs = resolveSentTimestampMs(rule);
+  const messageId = genSnowflake(sentMs);
+  const timestampIso = new Date(sentMs).toISOString();
   const text = rule.messages[idx] ?? "";
 
   const embeds =
@@ -93,7 +115,7 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
     flags: 0,
     reactions: [],
     author,
-    timestamp: now,
+    timestamp: timestampIso,
     edited_timestamp: null,
     state: "SENT",
   };

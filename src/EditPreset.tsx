@@ -153,6 +153,27 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
         ) : null}
       </FormSection>
 
+      <FormSection title="Sent time">
+        <FormSwitchRow
+          label="Custom timestamp"
+          subLabel="Pick when this message appears to have been sent (local preview only)"
+          value={local.customSentAtEnabled}
+          onValueChange={(v: boolean) => updateField("customSentAtEnabled", v)}
+        />
+        <FormInput
+          title="Time (ISO 8601)"
+          value={local.sentAtIso}
+          onChange={(v: string) => updateField("sentAtIso", v)}
+          placeholder="2026-05-02T18:30:00.000Z"
+        />
+        <FormRow
+          label="Insert current UTC time"
+          subLabel="Sets the field above to now — edit digits if needed"
+          trailing={FormRow.Arrow}
+          onPress={() => updateField("sentAtIso", new Date().toISOString())}
+        />
+      </FormSection>
+
       <FormSection title="Embed">
         <FormSwitchRow
           label="Embed preview"
