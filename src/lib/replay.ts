@@ -2,6 +2,7 @@ import { FluxDispatcher } from "@vendetta/metro/common";
 import { showToast } from "@vendetta/ui/toasts";
 import type { RootStorage } from "./types";
 import { ensureRoot } from "./storageModel";
+import { dispatchLocalMessageCreate } from "./dispatch";
 
 let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 let connUnsub: (() => void) | null = null;
@@ -17,15 +18,7 @@ export function replayCached(st: RootStorage, withToast = true): void {
   try {
     ensureRoot(st);
     for (const msg of st.cached) {
-      const cid = String((msg as { channel_id?: string }).channel_id || "");
-      if (!cid) continue;
-      FluxDispatcher.dispatch({
-        type: "MESSAGE_CREATE",
-        channelId: cid,
-        message: msg,
-        optimistic: false,
-        isPushNotification: false,
-      });
+      dispatchLocalMessageCreate(msg as Record<string, unknown>);
     }
     if (withToast) toastSafe("Replayed cached messages.");
   } catch (e) {

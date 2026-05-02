@@ -1,4 +1,4 @@
-import { FluxDispatcher, NavigationNative, React } from "@vendetta/metro/common";
+import { NavigationNative, React } from "@vendetta/metro/common";
 import { Forms, General } from "@vendetta/ui/components";
 import { showToast } from "@vendetta/ui/toasts";
 import { getAssetIDByName } from "@vendetta/ui/assets";
@@ -7,6 +7,7 @@ import { storage } from "@vendetta/plugin";
 import EditPreset from "./EditPreset";
 import { pushSubPage } from "./lib/nav";
 import { defaultPreset, ensureRoot } from "./lib/storageModel";
+import { replayCached } from "./lib/replay";
 import type { RootStorage } from "./lib/types";
 
 const { ScrollView } = General;
@@ -32,19 +33,7 @@ export default function Settings(): React.ReactElement {
 
   const replayNow = (): void => {
     try {
-      ensureRoot(st);
-      for (const msg of st.cached) {
-        const cid = String((msg as { channel_id?: string }).channel_id || "");
-        if (!cid) continue;
-        FluxDispatcher.dispatch({
-          type: "MESSAGE_CREATE",
-          channelId: cid,
-          message: msg,
-          optimistic: false,
-          isPushNotification: false,
-        });
-      }
-      showToast("Replayed cached messages.", getAssetIDByName("Check"));
+      replayCached(st, true);
     } catch (e) {
       showToast(String((e as Error)?.message || e), getAssetIDByName("Small"));
     }

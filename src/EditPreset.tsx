@@ -1,10 +1,11 @@
-import { clipboard, FluxDispatcher, NavigationNative, React } from "@vendetta/metro/common";
+import { clipboard, NavigationNative, React } from "@vendetta/metro/common";
 import { Forms, General } from "@vendetta/ui/components";
 import { showToast } from "@vendetta/ui/toasts";
 import { getAssetIDByName } from "@vendetta/ui/assets";
 import { useProxy } from "@vendetta/storage";
 import { storage } from "@vendetta/plugin";
 import { showConfirmationAlert } from "@vendetta/ui/alerts";
+import { dispatchLocalMessageCreate } from "./lib/dispatch";
 import { buildPayload, cloneForStorage } from "./lib/message";
 import { commitRuleAtIndex, deleteRuleAtIndex, ensureRoot } from "./lib/storageModel";
 import type { Preset, RootStorage } from "./lib/types";
@@ -50,10 +51,11 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
   const sendNow = (): void => {
     try {
       const payload = buildPayload(ruleRef.current);
-      FluxDispatcher.dispatch(payload as never);
-      const stored = cloneForStorage(payload.message as Record<string, unknown>);
+      const msg = payload.message as Record<string, unknown>;
+      dispatchLocalMessageCreate(msg);
+      const stored = cloneForStorage(msg);
       if (stored) st.cached.push(stored);
-      showToast("Local message injected.", getAssetIDByName("Check"));
+      showToast("Local message injected (saved to local cache).", getAssetIDByName("Check"));
     } catch (e) {
       showToast(String((e as Error)?.message || e), getAssetIDByName("Small"));
     }
