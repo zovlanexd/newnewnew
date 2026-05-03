@@ -6,7 +6,7 @@ import { useProxy } from "@vendetta/storage";
 import { storage } from "@vendetta/plugin";
 import EditPreset from "./EditPreset";
 import { pushSubPage } from "./lib/nav";
-import { defaultPreset, ensureRoot } from "./lib/storageModel";
+import { customTemplatePreset, ensureRoot, simpleTemplatePreset } from "./lib/storageModel";
 import { replayCached } from "./lib/replay";
 import type { RootStorage } from "./lib/types";
 
@@ -25,8 +25,14 @@ export default function Settings(): React.ReactElement {
     );
   };
 
-  const createPreset = (): void => {
-    const next = defaultPreset("New preset");
+  const createSimpleTemplate = (): void => {
+    const next = simpleTemplatePreset("Simple template");
+    st.rules = [...st.rules, next];
+    openEditor(st.rules.length - 1);
+  };
+
+  const createCustomTemplate = (): void => {
+    const next = customTemplatePreset("Custom template");
     st.rules = [...st.rules, next];
     openEditor(st.rules.length - 1);
   };
@@ -59,7 +65,18 @@ export default function Settings(): React.ReactElement {
             />
           ))
         )}
-        <FormRow label="New preset" trailing={FormRow.Arrow} onPress={createPreset} />
+        <FormRow
+          label="New simple template"
+          subLabel="Only fill Channel ID, Target user ID, and My user ID"
+          trailing={FormRow.Arrow}
+          onPress={createSimpleTemplate}
+        />
+        <FormRow
+          label="New custom template"
+          subLabel="Start blank and customize everything"
+          trailing={FormRow.Arrow}
+          onPress={createCustomTemplate}
+        />
       </FormSection>
 
       <FormSection title="Replay & cache">

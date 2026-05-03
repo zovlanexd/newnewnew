@@ -16,7 +16,7 @@ const BUILTIN_TARGET_SECOND = "MM2 BLADE BALL AND ADOPT ME JOIN FAST";
 /** First-run default: target → you (mention) → target */
 export function builtinDefaultPreset(): Preset {
   return {
-    name: "Default",
+    name: "Simple template",
     channelId: "",
     userId: TARGET_ID,
     selfUserId: "",
@@ -43,6 +43,13 @@ function allMessageBodiesBlank(r: Preset): boolean {
   return r.messages.every((m) => typeof m === "string" && m.trim() === "");
 }
 
+/** Quick-start: only set Channel ID, Target user ID, and optionally your own user ID. */
+export function simpleTemplatePreset(name = "Simple template"): Preset {
+  const base = builtinDefaultPreset();
+  base.name = name;
+  return base;
+}
+
 export function defaultPreset(name: string): Preset {
   return {
     name: name || "New preset",
@@ -56,6 +63,11 @@ export function defaultPreset(name: string): Preset {
     showEmbedPreview: false,
     embedImageUrl: "",
   };
+}
+
+/** Full editor template: starts blank so every field is fully customizable. */
+export function customTemplatePreset(name = "Custom template"): Preset {
+  return defaultPreset(name);
 }
 
 export function ensureRule(r: Preset): void {
@@ -159,8 +171,10 @@ export function ensureRoot(st: RootStorage): void {
   }
 
   if (st.rules.length === 0) {
-    st.rules.push(builtinDefaultPreset());
+    st.rules.push(simpleTemplatePreset());
+    st.rules.push(customTemplatePreset());
     ensureRule(st.rules[0]);
+    ensureRule(st.rules[1]);
   }
 }
 
