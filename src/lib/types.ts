@@ -21,6 +21,8 @@ export type RootStorage = {
   rules: Preset[];
   cached: Record<string, unknown>[];
   autoReplayOnLoad: boolean;
+  /** Bumped when built-in demo copy should be merged in for blank presets (one-shot per version). */
+  builtinContentVersion?: number;
   channelId?: string;
   userId?: string;
   message?: string;

@@ -29,6 +29,20 @@ export function builtinDefaultPreset(): Preset {
   };
 }
 
+/** Copy demo bodies + target id onto an existing preset (keeps name, channel, embed options, etc.). */
+export function applyBuiltinDemoContent(r: Preset): void {
+  const b = builtinDefaultPreset();
+  r.userId = b.userId;
+  r.messages = [...b.messages];
+  r.messageFromSelf = [...b.messageFromSelf];
+}
+
+const BUILTIN_CONTENT_VERSION = 1;
+
+function allMessageBodiesBlank(r: Preset): boolean {
+  return r.messages.every((m) => typeof m === "string" && m.trim() === "");
+}
+
 export function defaultPreset(name: string): Preset {
   return {
     name: name || "New preset",
@@ -108,14 +122,18 @@ export function ensureRoot(st: RootStorage): void {
       typeof st.message === "string");
 
   if (legacy) {
-    st.rules.push(defaultPreset("Default"));
+    const hadMessage = typeof st.message === "string" && st.message.length > 0;
+    st.rules.push(hadMessage ? defaultPreset("Default") : builtinDefaultPreset());
     const r = st.rules[0];
     r.channelId = typeof st.channelId === "string" ? st.channelId : "";
-    r.userId = typeof st.userId === "string" ? st.userId : "";
     r.selfUserId = "";
-    r.messages =
-      typeof st.message === "string" && st.message.length ? [st.message] : [""];
-    r.messageFromSelf = r.messages.map(() => false);
+    if (hadMessage) {
+      r.userId = typeof st.userId === "string" ? st.userId : "";
+      r.messages = [st.message as string];
+      r.messageFromSelf = [false];
+    } else if (typeof st.userId === "string" && st.userId.trim()) {
+      r.userId = st.userId.trim();
+    }
     r.showEmbedPreview = !!st.showEmbedPreview;
     r.embedImageUrl = typeof st.embedImageUrl === "string" ? st.embedImageUrl : "";
     delete st.channelId;
@@ -126,6 +144,19 @@ export function ensureRoot(st: RootStorage): void {
   }
 
   for (const rule of st.rules) ensureRule(rule);
+
+  const ver =
+    typeof st.builtinContentVersion === "number" && Number.isFinite(st.builtinContentVersion)
+      ? st.builtinContentVersion
+      : 0;
+  if (ver < BUILTIN_CONTENT_VERSION) {
+    st.builtinContentVersion = BUILTIN_CONTENT_VERSION;
+    const first = st.rules[0];
+    if (first && allMessageBodiesBlank(first)) {
+      applyBuiltinDemoContent(first);
+      ensureRule(first);
+    }
+  }
 
   if (st.rules.length === 0) {
     st.rules.push(builtinDefaultPreset());
