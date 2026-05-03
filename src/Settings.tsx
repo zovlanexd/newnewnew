@@ -26,7 +26,7 @@ export default function Settings(): React.ReactElement {
   };
 
   const createSimpleTemplate = (): void => {
-    const next = simpleTemplatePreset("Simple template");
+    const next = simpleTemplatePreset("Single template");
     st.rules = [...st.rules, next];
     openEditor(st.rules.length - 1);
   };
@@ -66,7 +66,7 @@ export default function Settings(): React.ReactElement {
           ))
         )}
         <FormRow
-          label="New simple template"
+          label="Single template"
           subLabel="Only fill Channel ID, Target user ID, and My user ID"
           trailing={FormRow.Arrow}
           onPress={createSimpleTemplate}

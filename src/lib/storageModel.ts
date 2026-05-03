@@ -5,18 +5,18 @@ const TARGET_ID = "2726759126";
 const BUILTIN_TARGET_FIRST = `Hi, im currently giving away free stuff on roblox. If you want to get some before its too late, join the link below.
 I may take some time answering but i will come back to you!
 
-[https://www.roblox.com/users/${TARGET_ID}/profile](https://www.roblox.ge/users/${TARGET_ID}/profile)`;
+[https://www.roblox.com/users/{{targetId}}/profile](https://www.roblox.com/users/{{targetId}}/profile)`;
 
 const BUILTIN_SELF_REPLY = `Excuse me?
 What are you giving away though
-<@${TARGET_ID}>`;
+<@{{targetId}}>`;
 
 const BUILTIN_TARGET_SECOND = "MM2 BLADE BALL AND ADOPT ME JOIN FAST";
 
 /** First-run default: target → you (mention) → target */
 export function builtinDefaultPreset(): Preset {
   return {
-    name: "Simple template",
+    name: "Single template",
     channelId: "",
     userId: TARGET_ID,
     selfUserId: "",
@@ -24,6 +24,8 @@ export function builtinDefaultPreset(): Preset {
     messageFromSelf: [false, true, false],
     customSentAtEnabled: false,
     sentAtIso: "",
+    variantCustomSentAtEnabled: [false, false, false],
+    variantSentAtIso: ["", "", ""],
     showEmbedPreview: false,
     embedImageUrl: "",
   };
@@ -44,7 +46,7 @@ function allMessageBodiesBlank(r: Preset): boolean {
 }
 
 /** Quick-start: only set Channel ID, Target user ID, and optionally your own user ID. */
-export function simpleTemplatePreset(name = "Simple template"): Preset {
+export function simpleTemplatePreset(name = "Single template"): Preset {
   const base = builtinDefaultPreset();
   base.name = name;
   return base;
@@ -60,6 +62,8 @@ export function defaultPreset(name: string): Preset {
     messageFromSelf: [false],
     customSentAtEnabled: false,
     sentAtIso: "",
+    variantCustomSentAtEnabled: [false],
+    variantSentAtIso: [""],
     showEmbedPreview: false,
     embedImageUrl: "",
   };
@@ -77,6 +81,8 @@ export function ensureRule(r: Preset): void {
   if (typeof r.selfUserId !== "string") r.selfUserId = "";
   if (typeof r.customSentAtEnabled !== "boolean") r.customSentAtEnabled = false;
   if (typeof r.sentAtIso !== "string") r.sentAtIso = "";
+  if (!Array.isArray(r.variantCustomSentAtEnabled)) r.variantCustomSentAtEnabled = [];
+  if (!Array.isArray(r.variantSentAtIso)) r.variantSentAtIso = [];
   if (typeof r.showEmbedPreview !== "boolean") r.showEmbedPreview = false;
   if (typeof r.embedImageUrl !== "string") r.embedImageUrl = "";
 
@@ -113,6 +119,20 @@ export function ensureRule(r: Preset): void {
   }
   if (r.messageFromSelf.length > r.messages.length) {
     r.messageFromSelf = r.messageFromSelf.slice(0, r.messages.length);
+  }
+
+  while (r.variantCustomSentAtEnabled.length < r.messages.length) {
+    r.variantCustomSentAtEnabled.push(false);
+  }
+  if (r.variantCustomSentAtEnabled.length > r.messages.length) {
+    r.variantCustomSentAtEnabled = r.variantCustomSentAtEnabled.slice(0, r.messages.length);
+  }
+
+  while (r.variantSentAtIso.length < r.messages.length) {
+    r.variantSentAtIso.push("");
+  }
+  if (r.variantSentAtIso.length > r.messages.length) {
+    r.variantSentAtIso = r.variantSentAtIso.slice(0, r.messages.length);
   }
 }
 

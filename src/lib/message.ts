@@ -26,7 +26,18 @@ export function genSnowflake(atMs?: number): string {
   return String((ts << 22n) | rand);
 }
 
-export function resolveSentTimestampMs(rule: Preset): number {
+export function resolveSentTimestampMs(rule: Preset, variantIndex: number): number {
+  const perVariantEnabled = rule.variantCustomSentAtEnabled?.[variantIndex] ?? false;
+  const perVariantIso = rule.variantSentAtIso?.[variantIndex]?.trim() ?? "";
+  if (perVariantEnabled) {
+    if (!perVariantIso.length) return Date.now();
+    const parsed = Date.parse(perVariantIso);
+    if (Number.isNaN(parsed)) {
+      throw new Error("Invalid per-message sent time.");
+    }
+    return parsed;
+  }
+
   if (!rule.customSentAtEnabled) return Date.now();
   const raw = rule.sentAtIso?.trim() ?? "";
   if (!raw.length) return Date.now();
@@ -88,10 +99,14 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
         global_name: "Unknown user",
       };
 
-  const sentMs = resolveSentTimestampMs(rule);
+  const sentMs = resolveSentTimestampMs(rule, idx);
   const messageId = genSnowflake(sentMs);
   const timestampIso = new Date(sentMs).toISOString();
-  const text = rule.messages[idx] ?? "";
+  const rawText = rule.messages[idx] ?? "";
+  const text = rawText
+    .replaceAll("{{targetId}}", targetId)
+    .replaceAll("{{mentionTarget}}", `<@${targetId}>`)
+    .replaceAll("{{myId}}", authorId);
 
   const embeds =
     rule.showEmbedPreview && text.trim().length > 0

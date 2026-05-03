@@ -1,4 +1,4 @@
-import { clipboard, NavigationNative, React } from "@vendetta/metro/common";
+import { clipboard, NavigationNative, React, ReactNative } from "@vendetta/metro/common";
 import { Forms, General } from "@vendetta/ui/components";
 import { showToast } from "@vendetta/ui/toasts";
 import { getAssetIDByName } from "@vendetta/ui/assets";
@@ -52,6 +52,53 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
       ruleRef.current = n;
       return n;
     });
+  };
+
+  const openVariantTimePicker = async (variantIdx: number): Promise<void> => {
+    const rn = ReactNative as unknown as {
+      DatePickerAndroid?: {
+        open?: (opts: { date?: Date }) => Promise<{ action: string; year?: number; month?: number; day?: number }>;
+      };
+      TimePickerAndroid?: {
+        open?: (opts: { hour?: number; minute?: number; is24Hour?: boolean }) => Promise<{ action: string; hour?: number; minute?: number }>;
+      };
+    };
+    const openDate = rn.DatePickerAndroid?.open;
+    const openTime = rn.TimePickerAndroid?.open;
+    if (!openDate || !openTime) {
+      showToast("Clock picker is not available here. Use ISO field or Use current time.", getAssetIDByName("Small"));
+      return;
+    }
+
+    try {
+      const currentRaw = (ruleRef.current.variantSentAtIso?.[variantIdx] ?? "").trim();
+      const baseDate = currentRaw ? new Date(currentRaw) : new Date();
+      const dateResult = await openDate({ date: baseDate });
+      if (dateResult.action !== "dateSetAction") return;
+
+      const timeResult = await openTime({
+        hour: baseDate.getHours(),
+        minute: baseDate.getMinutes(),
+        is24Hour: true,
+      });
+      if (timeResult.action !== "timeSetAction") return;
+
+      const dt = new Date(
+        dateResult.year ?? baseDate.getFullYear(),
+        dateResult.month ?? baseDate.getMonth(),
+        dateResult.day ?? baseDate.getDate(),
+        timeResult.hour ?? baseDate.getHours(),
+        timeResult.minute ?? baseDate.getMinutes(),
+        0,
+        0,
+      );
+      const next = [...(ruleRef.current.variantSentAtIso ?? [])];
+      while (next.length <= variantIdx) next.push("");
+      next[variantIdx] = dt.toISOString();
+      updateField("variantSentAtIso", next);
+    } catch (_) {
+      showToast("Could not open clock picker.", getAssetIDByName("Small"));
+    }
   };
 
   const sendNow = (): void => {
@@ -151,6 +198,46 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
                 updateField("messageFromSelf", next);
               }}
             />
+            <FormSwitchRow
+              label="Custom sent time"
+              subLabel="Set a separate timestamp for this message"
+              value={local.variantCustomSentAtEnabled?.[i] ?? false}
+              onValueChange={(v: boolean) => {
+                const next = [...(local.variantCustomSentAtEnabled ?? [])];
+                while (next.length <= i) next.push(false);
+                next[i] = v;
+                updateField("variantCustomSentAtEnabled", next);
+              }}
+            />
+            <FormInput
+              title="Sent time (ISO 8601)"
+              value={local.variantSentAtIso?.[i] ?? ""}
+              onChange={(v: string) => {
+                const next = [...(local.variantSentAtIso ?? [])];
+                while (next.length <= i) next.push("");
+                next[i] = v;
+                updateField("variantSentAtIso", next);
+              }}
+              placeholder="2026-05-02T18:30:00.000Z"
+            />
+            <FormRow
+              label="Use current time for this message"
+              trailing={FormRow.Arrow}
+              onPress={() => {
+                const next = [...(local.variantSentAtIso ?? [])];
+                while (next.length <= i) next.push("");
+                next[i] = new Date().toISOString();
+                updateField("variantSentAtIso", next);
+              }}
+            />
+            <FormRow
+              label="Pick time (clock)"
+              subLabel="Opens date + time picker when supported"
+              trailing={FormRow.Arrow}
+              onPress={() => {
+                void openVariantTimePicker(i);
+              }}
+            />
           </React.Fragment>
         ))}
         <FormRow
@@ -160,7 +247,17 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
             setLocal((prev) => {
               const ms = [...(prev.messageFromSelf ?? [])];
               ms.push(false);
-              const n = { ...prev, messages: [...prev.messages, ""], messageFromSelf: ms };
+              const varEnabled = [...(prev.variantCustomSentAtEnabled ?? [])];
+              varEnabled.push(false);
+              const varIso = [...(prev.variantSentAtIso ?? [])];
+              varIso.push("");
+              const n = {
+                ...prev,
+                messages: [...prev.messages, ""],
+                messageFromSelf: ms,
+                variantCustomSentAtEnabled: varEnabled,
+                variantSentAtIso: varIso,
+              };
               ruleRef.current = n;
               return n;
             });
@@ -175,10 +272,14 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
               setLocal((prev) => {
                 const next = prev.messages.slice(0, -1);
                 const ms = (prev.messageFromSelf ?? []).slice(0, -1);
+                const varEnabled = (prev.variantCustomSentAtEnabled ?? []).slice(0, -1);
+                const varIso = (prev.variantSentAtIso ?? []).slice(0, -1);
                 const n = {
                   ...prev,
                   messages: next.length ? next : [""],
                   messageFromSelf: ms.length ? ms : [false],
+                  variantCustomSentAtEnabled: varEnabled.length ? varEnabled : [false],
+                  variantSentAtIso: varIso.length ? varIso : [""],
                 };
                 ruleRef.current = n;
                 return n;
@@ -188,10 +289,10 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
         ) : null}
       </FormSection>
 
-      <FormSection title="Sent time">
+      <FormSection title="Fallback sent time (optional)">
         <FormSwitchRow
           label="Custom timestamp"
-          subLabel="Pick when this message appears to have been sent (local preview only)"
+          subLabel="Used only when a message variant does not have its own custom time"
           value={local.customSentAtEnabled}
           onValueChange={(v: boolean) => updateField("customSentAtEnabled", v)}
         />

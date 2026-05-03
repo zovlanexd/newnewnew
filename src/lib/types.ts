@@ -13,6 +13,10 @@ export type Preset = {
   customSentAtEnabled: boolean;
   /** ISO 8601, e.g. 2026-05-02T18:30:00.000Z — used only if customSentAtEnabled */
   sentAtIso: string;
+  /** Per-message timestamp toggle; index-aligned with messages. */
+  variantCustomSentAtEnabled: boolean[];
+  /** Per-message ISO 8601 timestamp; index-aligned with messages. */
+  variantSentAtIso: string[];
   showEmbedPreview: boolean;
   embedImageUrl: string;
 };
