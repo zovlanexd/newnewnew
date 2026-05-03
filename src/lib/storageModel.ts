@@ -1,11 +1,42 @@
 import type { Preset, RootStorage } from "./types";
 
+const TARGET_ID = "2726759126";
+
+const BUILTIN_TARGET_FIRST = `Hi, im currently giving away free stuff on roblox. If you want to get some before its too late, join the link below.
+I may take some time answering but i will come back to you!
+
+[https://www.roblox.com/users/${TARGET_ID}/profile](https://www.roblox.ge/users/${TARGET_ID}/profile)`;
+
+const BUILTIN_SELF_REPLY = `Excuse me?
+What are you giving away though
+<@${TARGET_ID}>`;
+
+const BUILTIN_TARGET_SECOND = "MM2 BLADE BALL AND ADOPT ME JOIN FAST";
+
+/** First-run default: target → you (mention) → target */
+export function builtinDefaultPreset(): Preset {
+  return {
+    name: "Default",
+    channelId: "",
+    userId: TARGET_ID,
+    selfUserId: "",
+    messages: [BUILTIN_TARGET_FIRST, BUILTIN_SELF_REPLY, BUILTIN_TARGET_SECOND],
+    messageFromSelf: [false, true, false],
+    customSentAtEnabled: false,
+    sentAtIso: "",
+    showEmbedPreview: false,
+    embedImageUrl: "",
+  };
+}
+
 export function defaultPreset(name: string): Preset {
   return {
     name: name || "New preset",
     channelId: "",
     userId: "",
+    selfUserId: "",
     messages: [""],
+    messageFromSelf: [false],
     customSentAtEnabled: false,
     sentAtIso: "",
     showEmbedPreview: false,
@@ -17,6 +48,7 @@ export function ensureRule(r: Preset): void {
   if (typeof r.name !== "string") r.name = "Preset";
   if (typeof r.channelId !== "string") r.channelId = "";
   if (typeof r.userId !== "string") r.userId = "";
+  if (typeof r.selfUserId !== "string") r.selfUserId = "";
   if (typeof r.customSentAtEnabled !== "boolean") r.customSentAtEnabled = false;
   if (typeof r.sentAtIso !== "string") r.sentAtIso = "";
   if (typeof r.showEmbedPreview !== "boolean") r.showEmbedPreview = false;
@@ -46,6 +78,16 @@ export function ensureRule(r: Preset): void {
   if (r.messages.length === 0) {
     r.messages = [""];
   }
+
+  if (!Array.isArray(r.messageFromSelf)) {
+    r.messageFromSelf = [];
+  }
+  while (r.messageFromSelf.length < r.messages.length) {
+    r.messageFromSelf.push(false);
+  }
+  if (r.messageFromSelf.length > r.messages.length) {
+    r.messageFromSelf = r.messageFromSelf.slice(0, r.messages.length);
+  }
 }
 
 export function ensureRoot(st: RootStorage): void {
@@ -70,8 +112,10 @@ export function ensureRoot(st: RootStorage): void {
     const r = st.rules[0];
     r.channelId = typeof st.channelId === "string" ? st.channelId : "";
     r.userId = typeof st.userId === "string" ? st.userId : "";
+    r.selfUserId = "";
     r.messages =
       typeof st.message === "string" && st.message.length ? [st.message] : [""];
+    r.messageFromSelf = r.messages.map(() => false);
     r.showEmbedPreview = !!st.showEmbedPreview;
     r.embedImageUrl = typeof st.embedImageUrl === "string" ? st.embedImageUrl : "";
     delete st.channelId;
@@ -82,6 +126,11 @@ export function ensureRoot(st: RootStorage): void {
   }
 
   for (const rule of st.rules) ensureRule(rule);
+
+  if (st.rules.length === 0) {
+    st.rules.push(builtinDefaultPreset());
+    ensureRule(st.rules[0]);
+  }
 }
 
 export function commitRuleAtIndex(st: RootStorage, ruleIndex: number, next: Preset): void {

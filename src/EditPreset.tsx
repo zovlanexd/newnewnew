@@ -106,10 +106,16 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
           placeholder="Channel snowflake"
         />
         <FormInput
-          title="User ID"
+          title="Target user ID"
           value={local.userId}
           onChange={(v: string) => updateField("userId", v)}
-          placeholder="Author user snowflake"
+          placeholder="Other party / mention target snowflake"
+        />
+        <FormInput
+          title="My user ID (optional)"
+          value={local.selfUserId}
+          onChange={(v: string) => updateField("selfUserId", v)}
+          placeholder="Leave empty to use logged-in account"
         />
       </FormSection>
 
@@ -123,22 +129,42 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
           }
         />
         {local.messages.map((text, i) => (
-          <FormInput
-            key={i}
-            title={`Variant ${i + 1}`}
-            value={text}
-            onChange={(v: string) => {
-              const next = [...local.messages];
-              next[i] = v;
-              updateField("messages", next);
-            }}
-            placeholder="Text or embed body"
-          />
+          <React.Fragment key={i}>
+            <FormInput
+              title={`Variant ${i + 1}`}
+              value={text}
+              onChange={(v: string) => {
+                const next = [...local.messages];
+                next[i] = v;
+                updateField("messages", next);
+              }}
+              placeholder="Text or embed body"
+            />
+            <FormSwitchRow
+              label="From my account"
+              subLabel="Off: show as target user ID above"
+              value={local.messageFromSelf?.[i] ?? false}
+              onValueChange={(v: boolean) => {
+                const next = [...(local.messageFromSelf ?? [])];
+                while (next.length <= i) next.push(false);
+                next[i] = v;
+                updateField("messageFromSelf", next);
+              }}
+            />
+          </React.Fragment>
         ))}
         <FormRow
           label="Add message variant"
           trailing={FormRow.Arrow}
-          onPress={() => updateField("messages", [...local.messages, ""])}
+          onPress={() => {
+            setLocal((prev) => {
+              const ms = [...(prev.messageFromSelf ?? [])];
+              ms.push(false);
+              const n = { ...prev, messages: [...prev.messages, ""], messageFromSelf: ms };
+              ruleRef.current = n;
+              return n;
+            });
+          }}
         />
         {local.messages.length > 1 ? (
           <FormRow
@@ -146,8 +172,17 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
             trailing={FormRow.Arrow}
             variant="danger"
             onPress={() => {
-              const next = local.messages.slice(0, -1);
-              updateField("messages", next.length ? next : [""]);
+              setLocal((prev) => {
+                const next = prev.messages.slice(0, -1);
+                const ms = (prev.messageFromSelf ?? []).slice(0, -1);
+                const n = {
+                  ...prev,
+                  messages: next.length ? next : [""],
+                  messageFromSelf: ms.length ? ms : [false],
+                };
+                ruleRef.current = n;
+                return n;
+              });
             }}
           />
         ) : null}

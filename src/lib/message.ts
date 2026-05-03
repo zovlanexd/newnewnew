@@ -51,6 +51,7 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
   };
   const UserStore = findByStoreName("UserStore") as {
     getUser?: (id: string) => Record<string, unknown> | undefined;
+    getCurrentUser?: () => { id?: string } | undefined;
   };
 
   if (!ChannelStore?.getChannel) throw new Error("Channel store not found.");
@@ -58,11 +59,28 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
 
   const channel = ChannelStore.getChannel(channelId);
   const guildId = channel?.guild_id ?? null;
-  const cachedUser = UserStore.getUser(userId);
+
+  const targetId = userId;
+  const fromSelf = rule.messageFromSelf?.[idx] ?? false;
+  let authorId = targetId;
+  if (fromSelf) {
+    const selfOverride = rule.selfUserId?.trim() ?? "";
+    if (selfOverride.length) {
+      authorId = selfOverride;
+    } else {
+      const me = UserStore.getCurrentUser?.();
+      authorId = String(me?.id ?? "");
+    }
+    if (!authorId) {
+      throw new Error("Could not resolve your user ID — set My user ID or stay logged in.");
+    }
+  }
+
+  const cachedUser = UserStore.getUser(authorId);
   const author = cachedUser
     ? { ...cachedUser }
     : {
-        id: userId,
+        id: authorId,
         username: "unknown-user",
         discriminator: "0",
         avatar: null,
@@ -95,6 +113,12 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
         ]
       : [];
 
+  const mentionUsers: Record<string, unknown>[] = [];
+  if (fromSelf && targetId && (text.includes(`<@${targetId}`) || text.includes(`<@!${targetId}`))) {
+    const tu = UserStore.getUser(targetId);
+    if (tu) mentionUsers.push({ ...tu });
+  }
+
   const message = {
     id: messageId,
     type: 0,
@@ -103,7 +127,7 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
     guild_id: guildId,
     attachments: [],
     embeds,
-    mentions: [],
+    mentions: mentionUsers,
     mention_roles: [],
     mention_channels: [],
     mention_everyone: false,
