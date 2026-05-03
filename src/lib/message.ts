@@ -12,6 +12,41 @@ export function cloneForStorage(message: Record<string, unknown>): Record<string
 
 const DISCORD_EPOCH_MS = 1420070400000;
 
+function parseFlexibleSentTime(rawInput: string): number {
+  const raw = rawInput.trim();
+  if (!raw.length) return Date.now();
+
+  // Quick format: HH:mm or H:mm, with optional am/pm (e.g. 7:22, 7:22pm, 07:22 AM).
+  const timeOnly = raw.match(/^(\d{1,2}):(\d{2})(?:\s*([aApP][mM]))?$/);
+  if (timeOnly) {
+    const now = new Date();
+    let hour = Number(timeOnly[1]);
+    const minute = Number(timeOnly[2]);
+    const ampm = timeOnly[3]?.toLowerCase() ?? "";
+
+    if (!Number.isInteger(hour) || !Number.isInteger(minute) || minute < 0 || minute > 59) {
+      throw new Error("Invalid sent time.");
+    }
+    if (ampm) {
+      if (hour < 1 || hour > 12) throw new Error("Invalid sent time.");
+      if (ampm === "pm" && hour !== 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
+    } else if (hour < 0 || hour > 23) {
+      throw new Error("Invalid sent time.");
+    }
+
+    const dt = new Date(now);
+    dt.setHours(hour, minute, 0, 0);
+    return dt.getTime();
+  }
+
+  const parsed = Date.parse(raw);
+  if (Number.isNaN(parsed)) {
+    throw new Error("Invalid sent time.");
+  }
+  return parsed;
+}
+
 /** Discord-style snowflake from UTC millis (defaults to now). */
 export function genSnowflake(atMs?: number): string {
   const ms =
@@ -31,21 +66,17 @@ export function resolveSentTimestampMs(rule: Preset, variantIndex: number): numb
   const perVariantIso = rule.variantSentAtIso?.[variantIndex]?.trim() ?? "";
   if (perVariantEnabled) {
     if (!perVariantIso.length) return Date.now();
-    const parsed = Date.parse(perVariantIso);
-    if (Number.isNaN(parsed)) {
-      throw new Error("Invalid per-message sent time.");
-    }
-    return parsed;
+    return parseFlexibleSentTime(perVariantIso);
   }
 
   if (!rule.customSentAtEnabled) return Date.now();
   const raw = rule.sentAtIso?.trim() ?? "";
   if (!raw.length) return Date.now();
-  const parsed = Date.parse(raw);
-  if (Number.isNaN(parsed)) {
-    throw new Error('Invalid sent time — use ISO 8601 (e.g. 2026-05-02T18:30:00.000Z).');
+  try {
+    return parseFlexibleSentTime(raw);
+  } catch {
+    throw new Error("Invalid sent time — use HH:mm (e.g. 7:22) or ISO 8601.");
   }
-  return parsed;
 }
 
 export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unknown> {

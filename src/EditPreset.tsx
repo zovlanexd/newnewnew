@@ -210,7 +210,7 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
               }}
             />
             <FormInput
-              title="Sent time (ISO 8601)"
+              title="Sent time (HH:mm or ISO)"
               value={local.variantSentAtIso?.[i] ?? ""}
               onChange={(v: string) => {
                 const next = [...(local.variantSentAtIso ?? [])];
@@ -218,7 +218,7 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
                 next[i] = v;
                 updateField("variantSentAtIso", next);
               }}
-              placeholder="2026-05-02T18:30:00.000Z"
+              placeholder="7:22 or 2026-05-02T18:30:00.000Z"
             />
             <FormRow
               label="Use current time for this message"
@@ -297,10 +297,10 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
           onValueChange={(v: boolean) => updateField("customSentAtEnabled", v)}
         />
         <FormInput
-          title="Time (ISO 8601)"
+          title="Time (HH:mm or ISO)"
           value={local.sentAtIso}
           onChange={(v: string) => updateField("sentAtIso", v)}
-          placeholder="2026-05-02T18:30:00.000Z"
+          placeholder="7:22 or 2026-05-02T18:30:00.000Z"
         />
         <FormRow
           label="Insert current UTC time"
