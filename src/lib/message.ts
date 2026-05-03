@@ -137,6 +137,8 @@ export function buildPayload(rule: Preset, variantIndex = 0): Record<string, unk
   const text = rawText
     .replaceAll("{{targetId}}", targetId)
     .replaceAll("{{mentionTarget}}", `<@${targetId}>`)
+    .replaceAll("<@2726759126>", `<@${targetId}>`)
+    .replaceAll("<@!2726759126>", `<@${targetId}>`)
     .replaceAll("{{myId}}", authorId);
 
   const embeds =

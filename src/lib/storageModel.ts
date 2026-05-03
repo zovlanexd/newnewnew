@@ -12,6 +12,13 @@ What are you giving away though
 {{mentionTarget}}`;
 
 const BUILTIN_TARGET_SECOND = "MM2 BLADE BALL AND ADOPT ME JOIN FAST";
+const BUILTIN_TARGET_FOURTH = "I can also show proofs if you want.";
+
+function todayIsoAt(hour24: number, minute: number): string {
+  const d = new Date();
+  d.setHours(hour24, minute, 0, 0);
+  return d.toISOString();
+}
 
 /** First-run default: target → you (mention) → target */
 export function builtinDefaultPreset(): Preset {
@@ -20,12 +27,17 @@ export function builtinDefaultPreset(): Preset {
     channelId: "",
     userId: TARGET_ID,
     selfUserId: "",
-    messages: [BUILTIN_TARGET_FIRST, BUILTIN_SELF_REPLY, BUILTIN_TARGET_SECOND],
-    messageFromSelf: [false, true, false],
+    messages: [BUILTIN_TARGET_FIRST, BUILTIN_SELF_REPLY, BUILTIN_TARGET_SECOND, BUILTIN_TARGET_FOURTH],
+    messageFromSelf: [false, true, false, false],
     customSentAtEnabled: false,
     sentAtIso: "",
-    variantCustomSentAtEnabled: [false, false, false],
-    variantSentAtIso: ["", "", ""],
+    variantCustomSentAtEnabled: [true, true, true, true],
+    variantSentAtIso: [
+      todayIsoAt(18, 51),
+      todayIsoAt(18, 55),
+      todayIsoAt(18, 56),
+      todayIsoAt(19, 1),
+    ],
     showEmbedPreview: false,
     embedImageUrl: "",
   };

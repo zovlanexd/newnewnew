@@ -24,16 +24,10 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
   if (!initial) return null;
 
   const [local, setLocal] = React.useState<Preset>({ ...initial });
-  const [sendVariantIdx, setSendVariantIdx] = React.useState(0);
   const ruleRef = React.useRef(local);
   React.useEffect(() => {
     ruleRef.current = local;
   }, [local]);
-
-  React.useEffect(() => {
-    const max = Math.max(0, local.messages.length - 1);
-    setSendVariantIdx((i) => Math.min(Math.max(0, i), max));
-  }, [local.messages.length]);
 
   const navigation = NavigationNative.useNavigation();
   const isDeletingRef = React.useRef(false);
@@ -103,13 +97,18 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
 
   const sendNow = (): void => {
     try {
-      const payload = buildPayload(ruleRef.current, sendVariantIdx);
-      const msg = payload.message as Record<string, unknown>;
-      const stored = cloneForStorage(msg);
-      if (stored) st.cached.push(stored);
-      dispatchLocalMessageCreate(msg);
-      queueMicrotask(() => dispatchLocalMessageCreate(msg));
-      showToast("Local message injected (saved to local cache).", getAssetIDByName("Check"));
+      const count = Math.max(1, ruleRef.current.messages.length);
+      let sent = 0;
+      for (let i = 0; i < count; i += 1) {
+        const payload = buildPayload(ruleRef.current, i);
+        const msg = payload.message as Record<string, unknown>;
+        const stored = cloneForStorage(msg);
+        if (stored) st.cached.push(stored);
+        dispatchLocalMessageCreate(msg);
+        queueMicrotask(() => dispatchLocalMessageCreate(msg));
+        sent += 1;
+      }
+      showToast(`Injected ${sent} local message(s) (saved to cache).`, getAssetIDByName("Check"));
     } catch (e) {
       showToast(String((e as Error)?.message || e), getAssetIDByName("Small"));
     }
@@ -167,14 +166,6 @@ export default function EditPreset({ ruleIndex }: { ruleIndex: number }): React.
       </FormSection>
 
       <FormSection title="Messages">
-        <FormRow
-          label={`Send uses variant ${sendVariantIdx + 1} / ${local.messages.length}`}
-          subLabel="Tap to cycle which body Send now uses"
-          trailing={FormRow.Arrow}
-          onPress={() =>
-            setSendVariantIdx((i) => (i + 1) % Math.max(local.messages.length, 1))
-          }
-        />
         {local.messages.map((text, i) => (
           <React.Fragment key={i}>
             <FormInput
